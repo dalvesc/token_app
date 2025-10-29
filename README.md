@@ -239,3 +239,61 @@ Resposta:
 ```
 
 ---
+
+## Testes
+
+Para rodar os testes:
+
+```bash
+MIX_ENV=test mix ecto.create
+MIX_ENV=test mix ecto.migrate
+mix test
+```
+
+Os testes cobrem:
+
+- validação de user_id inválido
+
+- alocação básica
+
+- endpoint /tokens
+
+- limpeza global
+
+---
+
+## Decisões Técnicas Importantes
+
+### Por que TTL e timers vivem no processo TokenPool?
+
+- O TTL (2 minutos) não deveria ser reimplementado em cada request, ele é uma regra de negócio viva, contínua.
+
+- O TokenPool agenda um Process.send_after/3 para cada token alocado.
+
+- Quando o timer dispara, ele libera o token, atualiza banco e memória.
+
+- A cada 30s, ele também roda um sweep de segurança para garantir que não ficou nada preso.
+
+### Por que banco + ETS, não só banco?
+
+* Banco sozinho é consistente, mas lento para tomar decisões concorrentes sob carga.
+* ETS é rápido para leitura e ordenação por "quem é o mais antigo ativo".
+* A verdade histórica continua no banco — isso é o que você inspeciona via API.
+
+### Possíveis evoluções
+
+* Rate limit por IP no endpoint de alocação.
+* Autenticação nos endpoints.
+* Distribuir o TokenPool entre múltiplas instâncias:
+  * Podemos usar um registro distribuído (Horde / :global) para ter um "líder".
+  * Ou migrar a lógica de arbitragem pra Postgres usando SELECT ... FOR UPDATE SKIP LOCKED e uma fila.
+
+---
+
+## Qualidade e Lint
+
+O projeto usa:
+
+* ``mix format``
+* ``credo`` para estilo e boas práticas
+* testes ExUnit
