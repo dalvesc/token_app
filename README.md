@@ -80,7 +80,7 @@ Isso garante que, mesmo depois de um crash, nenhum token continue "preso" para s
 ### 1. Clonar o repositório
 
 ```bash
-git clone <SEU_REPO_GITHUB_AQUI>
+git clone https://github.com/dalvesc/token_app.git
 cd token_app
 ```
 
